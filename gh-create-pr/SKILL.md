@@ -31,12 +31,35 @@ Make a todo list for all the tasks in this workflow and work on them one after a
 
 ### 1. Gather Context
 
-Collect the information needed to build the PR description:
+Collect all the information needed for subsequent steps. This is the single step responsible for all information gathering — later steps only consume what is collected here.
 
-- Run `git log --oneline main..HEAD` (or the appropriate base branch) to understand what commits are included.
-- Run `git diff main..HEAD --stat` to see which files changed.
+#### Determine the base branch
+
+Identify the base branch using this priority:
+
+1. User-specified base branch (if provided)
+2. Repository default branch (via `gh repo view --json defaultBranchRef -q .defaultBranchRef.name`)
+3. Fall back to `main`
+
+#### Collect change information
+
+- Run `git log --oneline <base>..HEAD` to understand what commits are included.
+- Run `git diff <base>..HEAD --stat` to see which files changed.
 - Read the changed files as needed to understand the nature of the changes.
-- If the user has provided a description, issue link, or screenshot path, note them for later use.
+- If there are no commits ahead of the base branch, warn the user and confirm whether to proceed.
+
+#### Collect user-provided inputs
+
+Gather and record all inputs the user has provided. Do not re-ask for information the user has already stated:
+
+- **Description**: Any summary or context the user provided about the changes.
+- **Issue/ticket references**: Issue numbers, PR numbers, or external tracker URLs (e.g., JIRA tickets).
+- **Screenshot path**: File path to a screenshot or image, if provided.
+- **Draft preference**: Whether the PR should be created as a draft or regular PR. If the user has not specified, ask them.
+- **Reviewers**: GitHub usernames for reviewer assignment, if specified.
+- **Labels**: Labels to apply, if specified.
+- **Milestone**: Milestone to assign, if specified.
+- **Title**: An explicit PR title, if stated by the user.
 
 ### 2. Check for PR Template
 
@@ -48,39 +71,49 @@ Look for an existing PR template in the repository. Check these common locations
 4. `PULL_REQUEST_TEMPLATE.md`
 5. `.github/PULL_REQUEST_TEMPLATE/` directory (if multiple templates exist)
 
-If a template is found, use it as the base structure for the PR body. Integrate the sections described below into the template, preserving any existing sections from the template (e.g., checklists, additional headings).
+If a template is found, read its contents. It will be used as the base structure in the next step.
 
-If no template is found, build the PR body from scratch using the sections below.
+If no template is found, the PR body will be built from scratch in the next step.
 
-### 3. Determine if the Repository is Front-End
+### 3. Compose PR Title and Description
 
-Check whether the project appears to be a front-end or UI-focused repository. Signals include:
+Using the context gathered in Step 1 and the optional template from Step 2, compose the PR title and body.
 
-- Presence of UI framework dependencies (e.g., `react`, `vue`, `angular`, `svelte`, `next`, `nuxt`, `remix`, `solid-js`, `astro`) in `package.json`
-- Directories like `src/components/`, `src/pages/`, `src/views/`, `app/`, `public/`
-- CSS/SCSS/Tailwind configuration files
-- Storybook or similar UI tooling
+#### Title
 
-This determines whether to include the Screenshots section.
+- If the user provided an explicit title, use it verbatim.
+- Otherwise, derive a concise title from the commit messages or branch name.
+- Keep it under 72 characters.
 
-### 4. Compose the PR Description
+#### Body
 
-Build a well-formatted Markdown PR body with the following sections. If a PR template was found, merge these sections into it rather than replacing it.
+If a PR template was found in Step 2, use it as the base structure and fill in or merge the sections below. Preserve any existing sections from the template (e.g., checklists, additional headings).
 
-#### Summary
+If no template was found, build the body from scratch with the following sections:
 
-Write a clear, concise summary of the changes. Include:
+##### Summary
+
+Write a clear, concise summary of the changes:
 
 - What was changed and why
 - Key implementation details worth highlighting
 - Any trade-offs or decisions made
 
-#### Screenshots (Front-End repositories only)
+##### Screenshots (conditionally included)
 
-Include this section only if the repository is front-end oriented (as determined in Step 3).
+Include this section only if the repository appears to be front-end or UI-focused. Signals include:
 
-- If the user provided an image file path, the image will be uploaded when creating the PR. Add a placeholder in the body: `![Screenshot](screenshot)` — the actual upload is handled in Step 5.
-- If the user has NOT provided a screenshot, include the section with an empty placeholder so it can be filled in later:
+- UI framework dependencies (e.g., `react`, `vue`, `angular`, `svelte`, `next`, `nuxt`, `remix`, `solid-js`, `astro`) in `package.json`
+- Directories like `src/components/`, `src/pages/`, `src/views/`, `app/`, `public/`
+- CSS/SCSS/Tailwind configuration files
+- Storybook or similar UI tooling
+
+If the repository is not front-end, skip this section entirely.
+
+If including this section:
+
+- If the user provided an image file path, add a placeholder: `![Screenshot](screenshot)` — the actual upload is handled in Step 5.
+- If the user has NOT provided a screenshot, include the section with an empty placeholder:
 
 ```markdown
 ## Screenshots
@@ -90,7 +123,7 @@ Include this section only if the repository is front-end oriented (as determined
 
 - If the user gives other specific instructions about screenshots (e.g., "generate a table comparing before and after"), follow those instructions.
 
-#### Refs
+##### Refs
 
 Include references to related issues, PRs, or external tracker tickets. Use GitHub keyword linking where appropriate:
 
@@ -102,7 +135,7 @@ Include references to related issues, PRs, or external tracker tickets. Use GitH
 - [JIRA-789](https://your-tracker.example.com/JIRA-789)
 ```
 
-- If the user mentioned an issue number, PR number, or ticket URL, include it here.
+- Use the issue/ticket references collected in Step 1.
 - If there are no known references, include the section with a placeholder:
 
 ```markdown
@@ -111,49 +144,67 @@ Include references to related issues, PRs, or external tracker tickets. Use GitH
 <!-- Add related issues, PRs, or tickets here -->
 ```
 
+### 4. Ensure Branch is Pushed
+
+Before creating the PR, ensure the current branch exists on the remote:
+
+```bash
+git rev-parse --abbrev-ref --symbolic-full-name @{u} 2>/dev/null
+```
+
+- **If no upstream exists**: Push with `git push -u origin HEAD`.
+- **If upstream exists but local is ahead**: Push with `git push`.
+- **If upstream exists but has diverged**: Warn the user and ask how to proceed (force-push, rebase, or abort).
+- **If push fails**: Report the error to the user (e.g., permission denied, network error) and do not proceed to PR creation.
+
 ### 5. Create the Pull Request
 
-Use the `gh` CLI to create the PR.
+Use the `gh` CLI to create the PR. Pass the PR body via a heredoc or temp file to avoid shell escaping issues with complex Markdown.
 
-**If the user provided a screenshot file path**, use the following approach to upload it:
+#### Build the command
 
-```bash
-gh pr create --title "<title>" --body "<body>" --draft
-```
-
-Then edit the PR body to replace the screenshot placeholder by uploading the image via:
+Start with the base command and add flags based on what was collected in Step 1:
 
 ```bash
-gh pr edit <pr-number> --body "$(gh pr view <pr-number> --json body -q .body | sed 's|!\[Screenshot\](screenshot)|![Screenshot](<uploaded-url>)|')"
+gh pr create \
+  --title "<title>" \
+  --body "<body>"
 ```
 
-IMPORTANT: To upload an image to GitHub, you can use the `gh` CLI issue/PR body editing flow, or inform the user that they need to manually drag-and-drop the image into the PR on GitHub's web UI if direct upload is not feasible via CLI.
+Add optional flags as applicable:
 
-**If no screenshot is needed**, create the PR directly:
+- `--draft` if the user chose draft mode
+- `--base <branch>` with the base branch determined in Step 1
+- `--reviewer <user1>,<user2>` if reviewers were specified
+- `--label <label1>,<label2>` if labels were specified
+- `--milestone <name>` if a milestone was specified
+
+#### Handle screenshot upload
+
+If the user provided a screenshot file path, create the PR first (as draft if not already), then upload the image by editing the PR body:
 
 ```bash
-gh pr create --title "<title>" --body "<body>"
+gh pr edit <pr-number> --body "$(updated body with uploaded image URL)"
 ```
 
-**Important notes:**
-- Pass the PR body via a heredoc or temp file to avoid shell escaping issues with complex Markdown.
-- If the user has not specified whether to create a draft or regular PR, ask them.
-- If the user has specified a target base branch, use `--base <branch>`.
-- Make sure the current branch has been pushed to the remote before creating the PR.
+If direct CLI upload is not feasible, inform the user that they need to manually drag-and-drop the image into the PR on GitHub's web UI.
+
+#### Handle errors
+
+- **PR already exists for this branch**: Inform the user and offer to open the existing PR URL or update it with `gh pr edit`.
+- **Network error**: Retry once, then report the failure.
+- **Other errors**: Report the error message to the user and suggest corrective action.
 
 ### 6. Confirm and Share
 
-After the PR is created:
+After the PR is created, present the result to the user:
 
-- Display the PR URL to the user.
-- Provide a brief summary of what was included in the PR.
-- If screenshots were left empty, remind the user to add them.
+- **PR URL** (as a clickable link)
+- **PR title**
+- **Short summary** of what the PR contains
 
-## Wrap Up
+If any follow-up actions are needed, list them:
 
-Present the created PR to the user with:
-
-- The PR URL (clickable link)
-- The PR title
-- A short summary of what the PR contains
-- Any follow-up actions needed (e.g., "Remember to add screenshots before requesting review")
+- Screenshots left empty → remind the user to add them before requesting review
+- No reviewers assigned → suggest assigning reviewers if appropriate
+- Draft PR → remind the user to mark it as "Ready for review" when done
