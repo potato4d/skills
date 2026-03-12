@@ -47,13 +47,4 @@ Display the PR details in a structured, readable format:
 
 Highlight any action items that may require the user's attention (e.g., failing checks, requested changes, merge conflicts).
 
-### 4. Handle Follow-up
-
-Be ready to assist with common follow-up actions based on what the user sees:
-
-- Checkout the PR branch locally with `gh pr checkout <number>`.
-- View the full diff with `gh pr diff <number>`.
-- Open the PR in the browser with `gh pr view <number> --web`.
-- Summarize comments or reviews on request.
-
 If the PR is not found or access is denied, diagnose the error and inform the user clearly.
