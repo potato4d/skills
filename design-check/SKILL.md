@@ -1,58 +1,58 @@
 ---
 name: design-check
-description: フロントエンドのデザイン整合性をチェックする。デザインデータ（Figma等）とフロントエンド実装の差異を検出し、修正提案を行う。
+description: Check frontend design consistency. Detect discrepancies between design data (Figma, etc.) and frontend implementation, and propose fixes.
 ---
 
-# フロントエンドデザインチェックスキル
+# Frontend Design Check Skill
 
-デザインデータと実装画面を比較し、マージン・パディング・色・サイズ等の不一致を検出して修正を提案する。
+Compare design data with the implemented screen to detect inconsistencies in margins, padding, colors, sizes, etc., and propose fixes.
 
 ## Prerequisites
 
-比較対象のデザイン情報（プロンプト内の説明、ドキュメント、Figma URL等）が必要。ヘッドレスブラウザによるスクリーンショット取得にはブラウザ操作ツール（Puppeteer、Playwright等）が利用可能であること。
+Design information for comparison (descriptions in the prompt, documents, Figma URLs, etc.) is required. Browser automation tools (Puppeteer, Playwright, etc.) must be available for taking screenshots via a headless browser.
 
 ## Workflow
 
 Make a todo list for all the tasks in this workflow and work on them one after another.
 
-### 1. デザインデータの参照先を特定する
+### 1. Identify Design Data References
 
-比較用のデザイン情報がどこにあるか調査する:
+Investigate where the design information for comparison is located:
 
-- **プロンプト内の情報**: ユーザーがプロンプトで直接デザイン情報を提供している場合、それを最優先で使用する。
-- **ドキュメント・ソースコード**: プロンプトに情報がない場合、プロジェクト内のデザインドキュメントやスタイル定義ファイルを調査する。
-- **外部ツール参照**: Figma URL等の外部参照が提供されている場合、次のステップでアクセスを試みる。
+- **Information in the prompt**: If the user provides design information directly in the prompt, use it as the top priority.
+- **Documents and source code**: If the prompt does not contain the information, investigate design documents and style definition files within the project.
+- **External tool references**: If external references such as Figma URLs are provided, attempt to access them in the next step.
 
-### 2. デザインデータへのアクセス（可能な場合）
+### 2. Access Design Data (If Possible)
 
-外部デザインツールのデータ取得を試みる:
+Attempt to retrieve data from external design tools:
 
-- **MCP・API経由のアクセス**: Figma等にMCPツールやAPIでアクセス可能であれば、デザインデータを直接取得する。
-- **アクセス不可の場合**: 接続できない場合はこのステップをスキップし、手元の情報で進める。
+- **Access via MCP or API**: If Figma or similar tools are accessible via MCP tools or APIs, retrieve the design data directly.
+- **If inaccessible**: If the connection cannot be established, skip this step and proceed with the available information.
 
-### 3. デザインデータに基づく整合性検証
+### 3. Consistency Validation Based on Design Data
 
-ブラウザ幅を合わせた上で、マークアップとデザインデータを比較する:
+Match the browser width and compare the markup with the design data:
 
-- **検証対象**: マージン、パディング、背景色、ボーダー、カラー、グラデーション、サイズ、フォント等を厳密に比較する。
-- **テキスト差異の除外**: APIから取得されるデータと推測できるテキストの差異は指摘しない。
-- **可変幅要素の考慮**: デザインデータ上で固定幅であっても、可変幅と推測できる要素（リスト、テキストコンテナ等）は可変幅を前提に検証する。
-- **不一致の報告**: 差異を発見した場合、該当箇所・期待値・実際の値を明確に報告する。
+- **Validation targets**: Strictly compare margins, padding, background colors, borders, colors, gradients, sizes, fonts, etc.
+- **Exclude text differences**: Do not flag text differences that can be inferred as data fetched from an API.
+- **Consider variable-width elements**: Even if an element has a fixed width in the design data, validate it assuming variable width if it can be inferred as a variable-width element (lists, text containers, etc.).
+- **Report inconsistencies**: When discrepancies are found, clearly report the affected area, expected value, and actual value.
 
-### 4. 画像ベースの検証
+### 4. Image-Based Validation
 
-可能であれば、デザインデータと実装画面の視覚的比較を行う:
+If possible, perform a visual comparison of the design data and the implemented screen:
 
-- **デザイン画像の取得**: デザインデータを画像としてダウンロードまたはエクスポートする。
-- **スクリーンショット取得**: ヘッドレスブラウザで同一幅の実装画面のスクリーンショットを撮影する。
-- **画像比較**: 2つの画像を並べて視覚的な差異を特定する。
-- **修正提案の優先順位**: デザインデータとの一致よりも、実際の画面表示の一致を優先して修正を提案する。
+- **Obtain design images**: Download or export the design data as images.
+- **Take screenshots**: Capture screenshots of the implemented screen at the same width using a headless browser.
+- **Compare images**: Place the two images side by side and identify visual differences.
+- **Fix proposal priority**: Prioritize fixes based on matching the actual screen appearance rather than matching the design data exactly.
 
-### 5. 結果報告
+### 5. Report Results
 
-検証結果をユーザーに報告する:
+Report the validation results to the user:
 
-- **差異一覧**: 検出した不一致を、該当箇所・期待値・実際の値を含めて一覧で提示する。
-- **修正提案**: 各差異に対する具体的な修正方法（CSSプロパティの変更値等）を提案する。
-- **優先度の提示**: 視覚的な影響度に基づき、修正の優先度（高・中・低）を付与する。
-- **次のアクション**: 修正の実施有無をユーザーに確認し、必要に応じてコードの修正に進む。
+- **List of discrepancies**: Present a list of detected inconsistencies, including the affected area, expected value, and actual value.
+- **Fix proposals**: Propose specific fix methods for each discrepancy (e.g., CSS property value changes).
+- **Priority levels**: Assign fix priority (High, Medium, Low) based on visual impact.
+- **Next actions**: Confirm with the user whether to proceed with fixes, and move on to code modifications if needed.
