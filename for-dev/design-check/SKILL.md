@@ -7,9 +7,18 @@ description: Check frontend design consistency. Detect discrepancies between des
 
 Compare design data with the implemented screen to detect inconsistencies in margins, padding, colors, sizes, etc., and propose fixes.
 
+## How to Execute
+
+When this skill is invoked, immediately use the Agent tool to spawn a sub-agent. Pass the workflow below as the sub-agent's instructions. **Do NOT execute the workflow in the main context.** This ensures the design check is performed with a fresh context, free from implementation bias.
+
+Provide the sub-agent with only the essential context needed for checking (e.g., URLs to check, design specs or Figma links), without passing along implementation details.
+
 ## Prerequisites
 
-Design information for comparison (descriptions in the prompt, documents, Figma URLs, etc.) is required. Browser automation tools (Puppeteer, Playwright, etc.) must be available for taking screenshots via a headless browser.
+Design information for comparison (descriptions in the prompt, documents, Figma URLs, etc.) is required. For taking screenshots, use the following tools in priority order:
+
+1. **agent-browser** (MCP tool) — use this if available
+2. **Playwright** — use as fallback if agent-browser is not available
 
 ## Workflow
 
@@ -44,7 +53,7 @@ Match the browser width and compare the markup with the design data:
 If possible, perform a visual comparison of the design data and the implemented screen:
 
 - **Obtain design images**: Download or export the design data as images.
-- **Take screenshots**: Capture screenshots of the implemented screen at the same width using a headless browser.
+- **Take screenshots**: Capture screenshots of the implemented screen at the same width. Use **agent-browser** (MCP tool) if available; otherwise fall back to **Playwright**.
 - **Compare images**: Place the two images side by side and identify visual differences.
 - **Fix proposal priority**: Prioritize fixes based on matching the actual screen appearance rather than matching the design data exactly.
 
