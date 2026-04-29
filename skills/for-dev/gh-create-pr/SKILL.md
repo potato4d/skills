@@ -28,7 +28,7 @@ Gather the context needed to write a good PR:
 
 #### Template
 
-Check for a PR template in the repository (standard GitHub locations). If found, use it as the base structure and integrate the content below. If not found, build the body from scratch.
+Check for a PR template in the repository (standard GitHub locations, including `PULL_REQUEST_TEMPLATE.md`, `.github/PULL_REQUEST_TEMPLATE.md`, and template directories). If found, follow it as the authoritative structure: preserve its headings, required sections, checklists, prompts, and ordering unless the user explicitly asks otherwise. Fill the template with the best available content and integrate the guidance below into the template's existing sections rather than replacing it with a generic body. If not found, build the body from scratch.
 
 #### Title
 
